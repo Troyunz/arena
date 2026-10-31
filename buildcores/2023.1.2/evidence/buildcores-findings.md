@@ -222,39 +222,110 @@ AndroidX (lifecycle, window extensions)
 
 ---
 
-## The gap
+## 8. The Dart payload — recovered
 
-**The Dart application code is not in this artifact.** Everything above is the
-native shell, the resource layer and the bundled data. The actual app
-logic — compatibility rules, Auto Build, part models, pricing
-normalisation — is compiled AOT into `libapp.so`, which lives in the ABI split.
+**The gap is closed.** The native split was obtained without an emulator and
+without a browser: APKPure's XAPK endpoint accepts a plain `curl` once the
+correct query parameters are supplied.
 
-To close it I need one of:
+| Artifact | Bytes | SHA-256 |
+|---|---|---|
+| `buildcores-2023.1.2-apkpure.xapk` | 31,629,435 | `c3b03e14…` |
+| `config.x86_64.apk` (the native split) | 20,095,461 | `02571ec8…` |
+| `lib/x86_64/libapp.so` | 8,962,968 | `d73a359a…` |
+| `lib/x86_64/libflutter.so` | 11,109,376 | `36982ce0…` |
 
-1. **`config.arm64_v8a.apk`** (~20 MB) from the same version — the split
-   carrying `lib/*/libapp.so`
-2. A **universal APK** — APKMirror lists 64.8 MB
-   (`arm64-v8a + armeabi-v7a + x86_64`, nodpi), but its download flow is
-   JS-nonce gated and I could not complete it
-3. An **XAPK** from APKPure (a zip of base + splits) — their CDN returned 403
-4. If you have the app on a phone: **APK Extractor / Share APK** merges the
-   splits into one installable APK — attach that
+**Integrity.** The XAPK's SHA-1 is `f13bce9d2ce76e07ee0f554461ae7fa69ae0437f` —
+identical to the checksum APKPure publishes on its download page — and its size
+matches the CDN's declared `full_size` exactly. The base APK inside it is
+byte-identical to the Aptoide copy analysed earlier (MD5
+`f1a67a11436c1797548946910a379cfd`), so two independent sources agree.
 
-With `libapp.so` in hand, the REA passes that unlock are:
+### Snapshot facts
 
-```bash
-rea identify-flutter-build <apk>     # Dart SDK version from snapshot hash
-rea inspect-dart-aot <apk>           # string pool, class tokens, package URIs
-```
+- `flutter_detected: true`, ABI `x86_64`
+- **Dart snapshot hash** `adb4292f3ec25074ca70abcd2d5c7251`
+- Snapshot **kind 3** — the Dart 2.14 FullAOT layout REA can decode
+- Engine build id `65bfcf19eebaa2a1389adba208f315356f92517b`
+- Toolchain `Android (7155654, based on r399163b1) clang version 11.0.5`
+  → NDK r22b, i.e. a **Flutter 2.8–2.10-era engine**, notably older than this
+  build's Aug 2023 release date
 
-`inspect-dart-aot` is where the app's strings surface: API paths, part-category
-names, compatibility messages, and the Auto Build logic.
+| Section | Offset | Size | Kind |
+|---|---|---|---|
+| `_kDartVmSnapshotData` | 512 | 15,024 | 3 (header 13,578) |
+| `_kDartIsolateSnapshotData` | 15,552 | 3,053,952 | 3 (header 2,447,967) |
+| `_kDartVmSnapshotInstructions` | 3,080,192 | 20,096 | — |
+| `_kDartIsolateSnapshotInstructions` | 3,100,288 | 5,846,704 | — |
 
-## What I could still do without it
+### 129 Dart source files
 
-- `rea search-android-classes` / `inspect-android-class` / `inspect-android-method`
-  over the 2,629 DEX classes — the Kotlin/Java embedding and plugin layer
-- `rea project-android-application-graph` — full application graph
-- `rea decode-android-resources` — full decoded resource tree (already done
-  directly with apktool at `extracted/decoded/`)
-- `rea inspect-apk-signature` — already completed
+The isolate string pool yields 129 `package:buildcores/…` paths — the complete
+application structure:
+
+| Subsystem | Files |
+|---|---|
+| `Screens/` | 56 |
+| `Models/` | 35 |
+| `Widgets/` | 11 |
+| `Utilities/` | 9 |
+| `Database/` | 9 |
+| `API/` | 7 |
+| `main.dart`, `src/app.dart` | 2 |
+
+Full list: `evidence/dart_sources.txt`.
+
+### What the structure reveals
+
+- **There is a real backend, not just Firebase.** `src/API/` holds
+  `buildcores_api.dart` plus `_auth`, `_users`, `_official_parts`,
+  `_community_parts`, `_share_build` — and, notably, **`api_key_fetcher.dart`**.
+  So the Firebase RTDB URL found in `strings.xml` is not the whole story; the app
+  fetches API keys at runtime.
+- **Auto Build** is `src/Database/AutomaticBuild/automatic_build.dart`, surfaced
+  through `Screens/AutoBuild/generated_auto_build_view.dart` and
+  `Screens/automatic_build_view.dart`.
+- **A community-contributed parts system** exists — 20 files under
+  `Screens/CommunityDatabase/`, including per-category forms (`cpu_form.dart`,
+  `gpu_form.dart`, …), `private_part_form.dart`, and
+  `community_part_status_view.dart`. Users submit parts; there is a moderation
+  queue.
+- **Retailer price fields are per-region**, confirmed by string tokens:
+  `amazonUSPrice`, `amazonCAPrice`, `amazonPriceForRegion`,
+  `amazonStockStatusUK`, `bestbuy_price`, `bestbuy_stock_status`,
+  `adorama_availability`, `Walmart`.
+- **Reddit export is first-class**: `Utilities/generate_reddit_output.dart`,
+  alongside `generate_text_output.dart` and `generate_text_amazon_output.dart`.
+- **Compatibility** is modelled in `Models/PartFilters/` (14 filter classes) and
+  surfaced through `Screens/compatibility_filters_view.dart`.
+
+### Notable loose end
+
+The string pool contains `Uc8BN532Hg06EW1n8ksVjCWp3vSjdEkq` — a 32-character
+opaque token, the shape of an API key or client secret. Its role is
+**unconfirmed**; it may equally be a random identifier. I have not probed it, and
+the same rule as the Firebase URL applies: nothing is sent to any endpoint
+without your explicit say-so.
+
+### Coverage limits of this pass
+
+REA caps its projections: `package_uris` reported 500 of ≥1000 distinct URIs and
+`class_like_tokens` 2000 of ≥4000. The 129 `buildcores` paths above were recovered
+by pattern-matching raw ELF strings directly, which sidesteps the cap. A
+Dart-version-specific cluster parser would be needed to go from *identifier-shaped
+runs* to typed classes and functions.
+
+The ABI analysed is **x86_64**. This is fine for string/URI recovery (the Dart
+snapshot's data section is architecture-independent), but a native-code
+disassembly pass would want `config.arm64_v8a.apk` instead.
+
+## 9. Still open
+
+- The `api_key_fetcher.dart` flow and the real API base URL — needs either a
+  runtime trace (frida) or a static read of `buildcores_api.dart`'s constants
+- Whether `Uc8BN532Hg06EW1n8ksVjCWp3vSjdEkq` is a live credential
+- The 2,629 DEX classes, unexamined: `search-android-classes`,
+  `inspect-android-class/method`, `project-android-application-graph`
+- The current app is **BuildCores: 3D PC Builder** (`com.buildcores.buildcores`,
+  2026.3.0, 170.8 MB) — a separate, much larger rebuild. Say the word and I'll
+  start a second teardown against it.
