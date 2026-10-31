@@ -1,0 +1,59 @@
+# BuildCores 2026.4.0 (com.buildcores.buildcores) — network surface
+# extracted from Hermes bytecode string table
+
+## Hosts
+https://www.api.buildcores.com            # main API
+https://buildcores.com                    # marketing / content
+https://static.buildcores.com/3d-assets/  # 3D models (ghost parts, .glb)
+https://viewer.buildcores.com             # 3D viewer service
+https://www.renderapi.buildcores.com      # server-side render API
+https://buildcores.firebaseio.com         # Firebase RTDB (still present from 2023)
+https://buildcores-next-beta-o46sp.ondigitalocean.app  # staging backend
+
+## API routes observed
+/api/community/builds/build-by-share-code-pull-req
+/api/community/builds/build-metadata-by-share-code
+/api/custom-media/upload-modelsMotiScrollViewifi_p
+/api/events/collectAnalyticsEventspecTransformRegi
+/api/interactive/renderBuild/v1/accounts:signInWit
+/api/official/database/admin/upload-3d-modelsauto_
+/api/official/database/admin/upload-part-image-fil
+/api/official/milestones
+/api/official/milestones/admin/report-part-and-fla
+/api/official/milestones/analytics/assignee-dashbo
+/api/official/milestones/analytics/daily-reviews-a
+/api/official/milestones/analytics/reviewer-loops-
+/api/official/milestones/analytics/user-activity
+/api/official/milestones/analytics/weekly-approval
+/api/official/milestones/analytics/weekly-waiting-
+/api/official/milestones/by-part
+/api/official/milestones/createBlogInputSchemagnif
+/api/official/modeling-studiosGLB
+/api/open-db/create-part-admin_model_downloadCallb
+/api/region-storageV2FieldsSchemactiveOffsetYEndid
+/api/v2/push/updateDeviceTokenvar
+/api/viewer/sessions/authorizefindLastIndexpand_le
+/api/white-label-important-outline
+
+## Firebase Auth (Identity Toolkit)
+/v1/accounts:createAuthUrinstantAnimationStateGerinsurancegetListenersForPhasetFromNormalAndCoplanarPointegration
+/v1/accounts:delete
+/v1/accounts:lookupIdentifierTypeSchemapErroresolveClassComponentPropsThe
+/v1/accounts:resetPasswords
+/v1/accounts:sendOobCodefineIteratorMethods
+/v1/accounts:sendVerificationCodefineLazyObjectPropertyfinal
+/v1/accounts:signInWithCustomTokenizer
+/v1/accounts:signInWithEmailLink
+/v1/accounts:signInWithIdp
+/v1/accounts:signInWithPassword
+/v1/accounts:signInWithPhoneNumber
+/v1/accounts:signUpPassword
+/v1/accounts:updateQueue
+
+## Subscription SKUs (RevenueCat)
+rc_annual
+rc_lifetime
+rc_monthly
+rc_six_month
+rc_three_month
+rc_two_month

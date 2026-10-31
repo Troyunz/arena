@@ -1,0 +1,2 @@
+31b58961fdd81c7c34824c9901cd2df5664fff1bf8cf560a9b7eb0ba7ee0581a  buildcores-2026/2026.4.0/index.android.bundle
+3741c5976b94caaed8311efcf0039c218651db0228cf2b8a1047f4a3e88073c4  buildcores-2026/2026.4.0/config.arm64_v8a.apk
